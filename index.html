@@ -12,7 +12,7 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);
     font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
-  .wrap{max-width:880px;margin:0 auto;padding:32px 20px 48px}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 48px}
   header h1{font-size:24px;margin:0 0 6px}
   header .sub{margin:0;color:var(--muted);font-size:14px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:16px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
@@ -22,17 +22,19 @@
   .presets button{border:1px solid var(--line);background:#fff;color:var(--text);font-size:13px;padding:6px 12px;border-radius:999px;cursor:pointer;transition:.15s}
   .presets button:hover{border-color:var(--accent);color:var(--accent)}
   .presets button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
-  .grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:14px}
-  @media(max-width:680px){.grid{grid-template-columns:1fr 1fr}}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .grid .span2{grid-column:span 2}
+  @media(max-width:680px){.grid{grid-template-columns:1fr 1fr}.grid .span2{grid-column:span 2}}
   label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#344054;font-weight:600}
   label .hint{color:var(--muted);font-size:12px;font-weight:400}
-  input{width:100%;padding:9px 12px;border:1px solid #d5d9e3;border-radius:10px;font-size:15px;color:var(--text);background:#fff;font-weight:400}
-  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+  input,select{width:100%;padding:9px 12px;border:1px solid #d5d9e3;border-radius:10px;font-size:15px;color:var(--text);background:#fff;font-weight:400}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+  label[hidden]{display:none}
   .error{margin-top:14px;padding:10px 12px;background:#fef3f2;color:var(--red);border:1px solid #fecdca;border-radius:10px;font-size:13px}
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:16px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-top:16px}
   .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
   .stat .k{font-size:12px;color:var(--muted)}
-  .stat .v{font-size:20px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
+  .stat .v{font-size:19px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
   .stat .s{font-size:12px;color:var(--muted);margin-top:2px}
   .stat.bad .v{color:var(--red)} .stat.good .v{color:var(--green)}
   .table-wrap{overflow-x:auto}
@@ -51,7 +53,7 @@
   .bar{width:70%;max-width:36px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#818cf8,#4f46e5)}
   .bar.fixed{background:linear-gradient(180deg,#cbd5e1,#94a3b8)}
   .bar-p{font-size:11px;color:var(--muted);margin-top:6px;white-space:nowrap}
-  .foot{font-size:12.5px;color:var(--muted);margin:12px 0 0}
+  .foot{font-size:12.5px;color:var(--muted);margin:12px 0 0;line-height:1.7}
   .disclaimer{margin-top:18px;font-size:12.5px;color:var(--amber);background:#fffaeb;border:1px solid #fedf89;padding:10px 14px;border-radius:10px}
 </style>
 </head>
@@ -59,30 +61,55 @@
 <div class="wrap">
   <header>
     <h1>快乐8 · 倍投计划计算器</h1>
-    <p class="sub">按“中奖盈利 = 当时总投入 × 目标盈利率”反推每期投入。前几期填实际已投金额，之后的期数自动计算，并给出每期利润与累计总成本。</p>
+    <p class="sub">按“中奖盈利 = 当时总投入 × 目标利润率”反推每期投入。支持固定利润率 / 成本封顶 / 利润率递减三种模式，并计算全损概率与期望净收益。</p>
   </header>
 
   <section class="card">
     <div class="presets">
       <span class="lb">快速预设：</span>
-      <button type="button">前三期已投 · 保持50%</button>
-      <button type="button">第3期起按25%重算</button>
-      <button type="button">第4期起改25%</button>
+      <button type="button" data-i="0">前三期已投·保持50%</button>
+      <button type="button" data-i="1">第4期起改25%</button>
+      <button type="button" data-i="2">成本封顶¥15,000</button>
+      <button type="button" data-i="3">递减：25%×½ⁿ</button>
     </div>
     <div class="grid">
-      <label>前几期已投入（逗号分隔）
+      <label class="span2">前几期已投入（逗号分隔）
         <input id="fixed" type="text" value="158, 316, 475" placeholder="如：158, 316, 475">
       </label>
       <label>净赚倍数 w
         <input id="w" type="number" value="2" step="0.1" min="0.1">
         <span class="hint">押1赚w；赔率1:2 → w=2</span>
       </label>
-      <label>目标盈利率 %
-        <input id="r" type="number" value="50" step="1" min="1">
-        <span class="hint">盈利 ÷ 当时总投入</span>
-      </label>
       <label>总期数
         <input id="n" type="number" value="8" min="2" max="30">
+      </label>
+
+      <label>模式
+        <select id="mode">
+          <option value="fixed">固定利润率</option>
+          <option value="cap">成本封顶（反推利润率）</option>
+          <option value="decay">利润率逐期递减</option>
+        </select>
+      </label>
+      <label id="lbl-r">目标利润率 %
+        <input id="r" type="number" value="50" step="1" min="1">
+        <span class="hint">每期中奖盈利÷当时总投入</span>
+      </label>
+      <label id="lbl-cap" hidden>总成本上限 ¥
+        <input id="cap" type="number" value="15000" step="100" min="1">
+        <span class="hint">全部未中的累计投入</span>
+      </label>
+      <label id="lbl-r1" hidden>首期利润率 %
+        <input id="r1" type="number" value="25" step="1" min="1">
+        <span class="hint">待投第1期的目标</span>
+      </label>
+      <label id="lbl-q" hidden>递减系数 q
+        <input id="q" type="number" value="0.5" step="0.05" min="0.05" max="1">
+        <span class="hint">每期利润率×q；0.5即减半</span>
+      </label>
+      <label>单期中奖率 %
+        <input id="p" type="number" value="30" step="1" min="0" max="99">
+        <span class="hint">期望与全损概率用；填0隐藏</span>
       </label>
     </div>
     <div id="error" class="error" hidden></div>
@@ -100,7 +127,7 @@
         <tbody id="tbody"></tbody>
       </table>
     </div>
-    <p class="foot">规则：第 n 期投入 X = S × (1 + r) ÷ (w − r)，S 为之前累计投入，结果向上取整，保证盈利率不低于目标；中奖返还 (1+w)×当期投入。已投期按实际金额计算真实盈利率。“累计总投入”即若此前全部未中时的累计成本。</p>
+    <p class="foot" id="footnote"></p>
   </section>
 
   <section class="card">
@@ -108,47 +135,103 @@
     <div id="chart" class="bars-area"></div>
   </section>
 
-  <p class="disclaimer">⚠️ 仅供策略模拟演算：待投期金额按指数增长，全部未中时“累计总投入”就是最大亏损，请量力而行。</p>
+  <p class="disclaimer">⚠️ 仅供策略模拟演算：任何编排都无法改变期望为负的事实（单期中奖率 p 满足 p×(1+w)&lt;1 时，期望净收益 = (p×(1+w)−1)×期望投入，必然为负）；模型的作用是锁定“中奖即达标”的利润结构并压低总成本上限。请量力而行。</p>
 </div>
 
 <script>
 /* PURE-LOGIC-START */
-function computePlan(fixedStakes, w, rPct, totalPeriods) {
-  const r = rPct / 100;
+function computePlan(fixedStakes, w, targets, totalPeriods, capLimit) {
+  // targets: 待投各期的目标利润率（小数），长度 = totalPeriods - fixedStakes.length
+  // capLimit: 可选。给出时最后一期向下取整，保证累计总投入不超过上限
   const rows = [];
   let S = 0;
+  const M = fixedStakes.length;
   for (let i = 1; i <= totalPeriods; i++) {
-    let stake, planned;
-    if (i <= fixedStakes.length) {
+    let stake, planned, target = null;
+    if (i <= M) {
       stake = fixedStakes[i - 1];
       planned = false;
     } else {
+      const r = targets[i - M - 1];
+      target = r;
       stake = Math.ceil(S * (1 + r) / (w - r) - 1e-7);
+      if (capLimit != null && i === totalPeriods) {
+        const room = Math.floor(capLimit - S + 1e-7);
+        if (room < stake) stake = Math.max(1, room);
+      }
       planned = true;
     }
     const ret = (w + 1) * stake;      // 中奖返还（含本金）
     const profit = ret - S - stake;   // 中奖时净盈利
     const ratio = profit / (S + stake);
-    rows.push({ period: i, stake: stake, cum: S + stake, ret: ret, profit: profit, ratio: ratio, planned: planned });
+    rows.push({ period: i, stake: stake, cum: S + stake, ret: ret, profit: profit, ratio: ratio, target: target, planned: planned });
     S += stake;
   }
   return rows;
 }
+
+function planTargets(mode, S0, w, K, opt) {
+  // 返回 {targets:[...]} 或 {error:'...'}
+  if (mode === 'fixed') {
+    if (!(opt.r > 0) || opt.r >= w) return { error: '目标利润率需在 0 ~ ' + (w * 100) + '% 之间' };
+    return { targets: Array(K).fill(opt.r) };
+  }
+  if (mode === 'cap') {
+    if (!(opt.cap > S0)) return { error: '总成本上限需大于已投入合计 ¥' + S0 };
+    const floorCost = S0 * Math.pow((w + 1) / w, K);
+    if (opt.cap < floorCost) {
+      return { error: '成本上限过低：保本（利润率为0）也需要约 ¥' + Math.ceil(floorCost) + '，请调高上限或减少期数' };
+    }
+    const r = w - (w + 1) * Math.pow(S0 / opt.cap, 1 / K);
+    return { targets: Array(K).fill(r) };
+  }
+  if (mode === 'decay') {
+    if (!(opt.r1 > 0) || opt.r1 >= w) return { error: '首期利润率需在 0 ~ ' + (w * 100) + '% 之间' };
+    if (!(opt.q > 0) || opt.q > 1) return { error: '递减系数 q 需在 0 ~ 1 之间' };
+    const targets = [];
+    for (let j = 0; j < K; j++) targets.push(opt.r1 * Math.pow(opt.q, j));
+    return { targets: targets };
+  }
+  return { error: '未知模式' };
+}
+
+function expectation(rows, w, p) {
+  // 只对待投期计算；reach = 到达该期的概率（此前全未中）
+  const q = 1 - p;
+  let eSpend = 0, eProfit = 0, reach = 1;
+  for (const row of rows) {
+    if (!row.planned) continue;
+    eSpend += reach * row.stake;
+    eProfit += reach * p * row.profit;
+    reach *= q;
+  }
+  const edge = p * (w + 1) - 1;
+  return { eSpend: eSpend, eProfit: eProfit, lossProb: reach, ev: edge * eSpend, edge: edge };
+}
 /* PURE-LOGIC-END */
 
 const PRESETS = [
-  { fixed: '158, 316, 475', w: 2, r: 50, n: 8 },
-  { fixed: '158, 316',      w: 2, r: 25, n: 8 },
-  { fixed: '158, 316, 475', w: 2, r: 25, n: 8 },
+  { fixed: '158, 316, 475', w: 2, n: 8, mode: 'fixed', r: 50, cap: 15000, r1: 25, q: 0.5, p: 30 },
+  { fixed: '158, 316, 475', w: 2, n: 8, mode: 'fixed', r: 25, cap: 15000, r1: 25, q: 0.5, p: 30 },
+  { fixed: '158, 316, 475', w: 2, n: 8, mode: 'cap',   r: 50, cap: 15000, r1: 25, q: 0.5, p: 30 },
+  { fixed: '158, 316, 475', w: 2, n: 8, mode: 'decay', r: 50, cap: 15000, r1: 25, q: 0.5, p: 30 },
 ];
-const FIXED_EL = document.getElementById('fixed');
-const W_EL = document.getElementById('w');
-const R_EL = document.getElementById('r');
-const N_EL = document.getElementById('n');
+const $ = id => document.getElementById(id);
+const FIXED_EL = $('fixed'), W_EL = $('w'), N_EL = $('n'), MODE_EL = $('mode');
+const R_EL = $('r'), CAP_EL = $('cap'), R1_EL = $('r1'), Q_EL = $('q'), P_EL = $('p');
 
 const fmt = x => x.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
 const pct = v => { const x = v * 100, rr = Math.round(x); return (Math.abs(x - rr) < 0.05 ? rr : x.toFixed(1)) + '%'; };
 const trimNum = x => +x.toFixed(2);
+const MODE_NAME = { fixed: '固定利润率', cap: '成本封顶', decay: '利润率递减' };
+
+function syncModeFields() {
+  const m = MODE_EL.value;
+  $('lbl-r').hidden = m !== 'fixed';
+  $('lbl-cap').hidden = m !== 'cap';
+  $('lbl-r1').hidden = m !== 'decay';
+  $('lbl-q').hidden = m !== 'decay';
+}
 
 function readInputs() {
   const toks = FIXED_EL.value.trim().split(/[,，、\s]+/).filter(t => t.length);
@@ -159,38 +242,52 @@ function readInputs() {
     if (!Number.isFinite(v) || v <= 0) return { error: `“${t}” 不是有效的正数金额` };
     fixed.push(v);
   }
-  const w = Number(W_EL.value), rPct = Number(R_EL.value), n = Math.round(Number(N_EL.value));
+  const w = Number(W_EL.value), n = Math.round(Number(N_EL.value));
   if (!Number.isFinite(w) || w <= 0) return { error: '净赚倍数 w 需为正数' };
-  if (!Number.isFinite(rPct) || rPct <= 0) return { error: '目标盈利率需为正数' };
-  if (rPct / 100 >= w) return { error: `目标盈利率必须小于 w×100 = ${trimNum(w * 100)}%，否则无论投多少都达不到` };
   if (!Number.isFinite(n) || n < 2 || n > 30) return { error: '总期数需在 2 ~ 30 之间' };
   if (n <= fixed.length) return { error: `总期数需大于已投期数（当前已填 ${fixed.length} 期），否则没有需要计算的期` };
-  return { fixed, w, rPct, n };
+  const p = P_EL.value === '' ? 0 : Number(P_EL.value);
+  if (!Number.isFinite(p) || p < 0 || p >= 100) return { error: '单期中奖率需在 0 ~ 99% 之间（0 表示不计算期望）' };
+  return {
+    fixed: fixed, w: w, n: n, mode: MODE_EL.value,
+    r: Number(R_EL.value) / 100, cap: Number(CAP_EL.value),
+    r1: Number(R1_EL.value) / 100, q: Number(Q_EL.value), p: p / 100,
+  };
 }
 
 function render() {
+  syncModeFields();
   const v = readInputs();
-  const errEl = document.getElementById('error');
-  const statsEl = document.getElementById('stats');
-  const tbody = document.getElementById('tbody');
-  const chart = document.getElementById('chart');
+  const errEl = $('error'), statsEl = $('stats'), tbody = $('tbody'), chart = $('chart');
   if (v.error) {
     errEl.textContent = v.error; errEl.hidden = false;
     statsEl.innerHTML = ''; tbody.innerHTML = ''; chart.innerHTML = '';
     return;
   }
+  const M = v.fixed.length, K = v.n - M, S0 = v.fixed.reduce((a, b) => a + b, 0);
+  const plan = planTargets(v.mode, S0, v.w, K, { r: v.r, cap: v.cap, r1: v.r1, q: v.q });
+  if (plan.error) {
+    errEl.textContent = plan.error; errEl.hidden = false;
+    statsEl.innerHTML = ''; tbody.innerHTML = ''; chart.innerHTML = '';
+    return;
+  }
   errEl.hidden = true;
 
-  const rows = computePlan(v.fixed, v.w, v.rPct, v.n);
-  const M = v.fixed.length;
+  const rows = computePlan(v.fixed, v.w, plan.targets, v.n, v.mode === 'cap' ? v.cap : null);
   const last = rows[rows.length - 1];
-  const g = (v.w + 1) / (v.w - v.rPct / 100);
+  const exp = v.p > 0 ? expectation(rows, v.w, v.p) : null;
 
-  statsEl.innerHTML = `
-    <div class="stat"><div class="k">已投入（前 ${M} 期）</div><div class="v">¥${fmt(v.fixed.reduce((a, b) => a + b, 0))}</div><div class="s">第 ${M + 1} 期起按规则计算</div></div>
-    <div class="stat"><div class="k">计算期累计增长</div><div class="v">每期 ×${g.toFixed(2)}</div><div class="s">待投 ${v.n - M} 期</div></div>
-    <div class="stat bad"><div class="k">${v.n} 期全部未中 · 总成本</div><div class="v">¥${fmt(last.cum)}</div><div class="s">最大亏损封顶</div></div>
-    <div class="stat good"><div class="k">第 ${v.n} 期中奖时盈利</div><div class="v">+¥${fmt(last.profit)}</div><div class="s">盈利率 ${pct(last.ratio)}（目标 ${trimNum(v.rPct)}%）</div></div>`;
+  let cards = `
+    <div class="stat"><div class="k">已投入（前 ${M} 期）</div><div class="v">¥${fmt(S0)}</div><div class="s">第 ${M + 1} 期起按「${MODE_NAME[v.mode]}」计算</div></div>
+    <div class="stat bad"><div class="k">${v.n} 期全部未中 · 总成本</div><div class="v">¥${fmt(last.cum)}</div><div class="s">${v.mode === 'cap' ? '不超过上限 ¥' + fmt(v.cap) : '最大亏损封顶'}</div></div>
+    <div class="stat good"><div class="k">第 ${v.n} 期中奖时盈利</div><div class="v">+¥${fmt(last.profit)}</div><div class="s">盈利率 ${pct(last.ratio)}</div></div>`;
+  if (exp) {
+    cards += `
+    <div class="stat"><div class="k">全损概率（${K} 期全未中）</div><div class="v">${pct(exp.lossProb)}</div><div class="s">(1−p)^K，与投注金额无关</div></div>
+    <div class="stat good"><div class="k">中奖期望盈利</div><div class="v">+¥${fmt(exp.eProfit)}</div><div class="s">按到达概率加权</div></div>
+    <div class="stat ${exp.ev < 0 ? 'bad' : 'good'}"><div class="k">期望净收益（后续投入）</div><div class="v">${exp.ev < 0 ? '−' : '+'}¥${fmt(Math.abs(exp.ev))}</div><div class="s">期望投入 ¥${fmt(exp.eSpend)} × 边际 ${pct(exp.edge)}</div></div>`;
+  }
+  statsEl.innerHTML = cards;
 
   tbody.innerHTML = rows.map(r => `
     <tr>
@@ -209,20 +306,28 @@ function render() {
     const h = mx > mn ? 16 + 54 * (logs[i] - mn) / (mx - mn) : 45;
     return `<div class="bar-col"><div class="bar-lb">${fmt(r.stake)}</div><div class="bar${r.planned ? '' : ' fixed'}" style="height:${h}%"></div><div class="bar-p">第${r.period}期</div></div>`;
   }).join('');
+
+  $('footnote').innerHTML =
+    '规则：第 n 期投入 X = S × (1+r) ÷ (w−r)，S 为之前累计投入，向上取整保证不低于目标；中奖返还 (1+w)×当期投入。' +
+    '成本封顶模式：先解恒定利润率 r* = w − (w+1)×(S₀/C)<sup>1/K</sup>，最后一期向下微调确保总额不超上限。' +
+    '递减模式：目标利润率 rₙ = r₁×q<sup>n−1</sup>。' +
+    '期望层：全损概率 = (1−p)<sup>K</sup>；期望净收益 = (p×(1+w)−1)×期望投入。“累计总投入”即此前全部未中时的累计成本。';
 }
 
 const presetBtns = document.querySelectorAll('.presets button');
-presetBtns.forEach((b, i) => b.addEventListener('click', () => {
-  const p = PRESETS[i];
-  FIXED_EL.value = p.fixed; W_EL.value = p.w; R_EL.value = p.r; N_EL.value = p.n;
+presetBtns.forEach(b => b.addEventListener('click', () => {
+  const p = PRESETS[+b.dataset.i];
+  FIXED_EL.value = p.fixed; W_EL.value = p.w; N_EL.value = p.n;
+  MODE_EL.value = p.mode; R_EL.value = p.r; CAP_EL.value = p.cap; R1_EL.value = p.r1; Q_EL.value = p.q; P_EL.value = p.p;
   presetBtns.forEach(x => x.classList.remove('active'));
   b.classList.add('active');
   render();
 }));
-[FIXED_EL, W_EL, R_EL, N_EL].forEach(el => el.addEventListener('input', () => {
-  presetBtns.forEach(x => x.classList.remove('active'));
-  render();
-}));
+[MODE_EL, FIXED_EL, W_EL, N_EL, R_EL, CAP_EL, R1_EL, Q_EL, P_EL].forEach(el =>
+  el.addEventListener(el === MODE_EL ? 'change' : 'input', () => {
+    presetBtns.forEach(x => x.classList.remove('active'));
+    render();
+  }));
 presetBtns[0].classList.add('active');
 render();
 </script>
