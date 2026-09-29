@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>快乐8 · 倍投计划计算器</title>
+<style>
+  :root{
+    --bg:#f4f6fb;--card:#fff;--line:#e7eaf2;--text:#1a2233;--muted:#667085;
+    --accent:#4f46e5;--accent-soft:#eef0fe;--green:#067647;--red:#b42318;--amber:#b54708;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  .wrap{max-width:880px;margin:0 auto;padding:32px 20px 48px}
+  header h1{font-size:24px;margin:0 0 6px}
+  header .sub{margin:0;color:var(--muted);font-size:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:16px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .card h2{font-size:16px;margin:0 0 14px}
+  .presets{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:16px}
+  .presets .lb{font-size:13px;color:var(--muted)}
+  .presets button{border:1px solid var(--line);background:#fff;color:var(--text);font-size:13px;padding:6px 12px;border-radius:999px;cursor:pointer;transition:.15s}
+  .presets button:hover{border-color:var(--accent);color:var(--accent)}
+  .presets button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+  .grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:14px}
+  @media(max-width:680px){.grid{grid-template-columns:1fr 1fr}}
+  label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#344054;font-weight:600}
+  label .hint{color:var(--muted);font-size:12px;font-weight:400}
+  input{width:100%;padding:9px 12px;border:1px solid #d5d9e3;border-radius:10px;font-size:15px;color:var(--text);background:#fff;font-weight:400}
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+  .error{margin-top:14px;padding:10px 12px;background:#fef3f2;color:var(--red);border:1px solid #fecdca;border-radius:10px;font-size:13px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .stat .k{font-size:12px;color:var(--muted)}
+  .stat .v{font-size:20px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
+  .stat .s{font-size:12px;color:var(--muted);margin-top:2px}
+  .stat.bad .v{color:var(--red)} .stat.good .v{color:var(--green)}
+  .table-wrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
+  th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+  th{color:var(--muted);font-weight:600;font-size:12.5px;background:#fafbfd}
+  tbody tr:hover td{background:#fafbff}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px}
+  .badge.fixed{background:#f2f4f7;color:var(--muted)}
+  .badge.plan{background:var(--accent-soft);color:var(--accent)}
+  .profit{color:var(--green);font-weight:600}
+  .bars-area{height:170px;display:flex;align-items:stretch;gap:10px;overflow-x:auto;padding-top:2px}
+  .bar-col{flex:1;min-width:36px;max-width:72px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+  .bar-lb{font-size:11px;color:#475467;margin-bottom:4px;white-space:nowrap}
+  .bar{width:70%;max-width:36px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#818cf8,#4f46e5)}
+  .bar.fixed{background:linear-gradient(180deg,#cbd5e1,#94a3b8)}
+  .bar-p{font-size:11px;color:var(--muted);margin-top:6px;white-space:nowrap}
+  .foot{font-size:12.5px;color:var(--muted);margin:12px 0 0}
+  .disclaimer{margin-top:18px;font-size:12.5px;color:var(--amber);background:#fffaeb;border:1px solid #fedf89;padding:10px 14px;border-radius:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>快乐8 · 倍投计划计算器</h1>
+    <p class="sub">按“中奖盈利 = 当时总投入 × 目标盈利率”反推每期投入。前几期填实际已投金额，之后的期数自动计算，并给出每期利润与累计总成本。</p>
+  </header>
+
+  <section class="card">
+    <div class="presets">
+      <span class="lb">快速预设：</span>
+      <button type="button">前三期已投 · 保持50%</button>
+      <button type="button">第3期起按25%重算</button>
+      <button type="button">第4期起改25%</button>
+    </div>
+    <div class="grid">
+      <label>前几期已投入（逗号分隔）
+        <input id="fixed" type="text" value="158, 316, 475" placeholder="如：158, 316, 475">
+      </label>
+      <label>净赚倍数 w
+        <input id="w" type="number" value="2" step="0.1" min="0.1">
+        <span class="hint">押1赚w；赔率1:2 → w=2</span>
+      </label>
+      <label>目标盈利率 %
+        <input id="r" type="number" value="50" step="1" min="1">
+        <span class="hint">盈利 ÷ 当时总投入</span>
+      </label>
+      <label>总期数
+        <input id="n" type="number" value="8" min="2" max="30">
+      </label>
+    </div>
+    <div id="error" class="error" hidden></div>
+  </section>
+
+  <section id="stats" class="stats"></section>
+
+  <section class="card">
+    <h2>每期投入 · 利润 · 总成本</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>期数</th><th>状态</th><th>当期投入</th><th>累计总投入</th><th>若中奖返还</th><th>若中奖盈利</th><th>盈利率</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="foot">规则：第 n 期投入 X = S × (1 + r) ÷ (w − r)，S 为之前累计投入，结果向上取整，保证盈利率不低于目标；中奖返还 (1+w)×当期投入。已投期按实际金额计算真实盈利率。“累计总投入”即若此前全部未中时的累计成本。</p>
+  </section>
+
+  <section class="card">
+    <h2>当期投入走势（对数刻度）</h2>
+    <div id="chart" class="bars-area"></div>
+  </section>
+
+  <p class="disclaimer">⚠️ 仅供策略模拟演算：待投期金额按指数增长，全部未中时“累计总投入”就是最大亏损，请量力而行。</p>
+</div>
+
+<script>
+/* PURE-LOGIC-START */
+function computePlan(fixedStakes, w, rPct, totalPeriods) {
+  const r = rPct / 100;
+  const rows = [];
+  let S = 0;
+  for (let i = 1; i <= totalPeriods; i++) {
+    let stake, planned;
+    if (i <= fixedStakes.length) {
+      stake = fixedStakes[i - 1];
+      planned = false;
+    } else {
+      stake = Math.ceil(S * (1 + r) / (w - r) - 1e-7);
+      planned = true;
+    }
+    const ret = (w + 1) * stake;      // 中奖返还（含本金）
+    const profit = ret - S - stake;   // 中奖时净盈利
+    const ratio = profit / (S + stake);
+    rows.push({ period: i, stake: stake, cum: S + stake, ret: ret, profit: profit, ratio: ratio, planned: planned });
+    S += stake;
+  }
+  return rows;
+}
+/* PURE-LOGIC-END */
+
+const PRESETS = [
+  { fixed: '158, 316, 475', w: 2, r: 50, n: 8 },
+  { fixed: '158, 316',      w: 2, r: 25, n: 8 },
+  { fixed: '158, 316, 475', w: 2, r: 25, n: 8 },
+];
+const FIXED_EL = document.getElementById('fixed');
+const W_EL = document.getElementById('w');
+const R_EL = document.getElementById('r');
+const N_EL = document.getElementById('n');
+
+const fmt = x => x.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+const pct = v => { const x = v * 100, rr = Math.round(x); return (Math.abs(x - rr) < 0.05 ? rr : x.toFixed(1)) + '%'; };
+const trimNum = x => +x.toFixed(2);
+
+function readInputs() {
+  const toks = FIXED_EL.value.trim().split(/[,，、\s]+/).filter(t => t.length);
+  if (!toks.length) return { error: '请至少填写第一期的实际投入（首期金额无法由规则反推）' };
+  const fixed = [];
+  for (const t of toks) {
+    const v = Number(t);
+    if (!Number.isFinite(v) || v <= 0) return { error: `“${t}” 不是有效的正数金额` };
+    fixed.push(v);
+  }
+  const w = Number(W_EL.value), rPct = Number(R_EL.value), n = Math.round(Number(N_EL.value));
+  if (!Number.isFinite(w) || w <= 0) return { error: '净赚倍数 w 需为正数' };
+  if (!Number.isFinite(rPct) || rPct <= 0) return { error: '目标盈利率需为正数' };
+  if (rPct / 100 >= w) return { error: `目标盈利率必须小于 w×100 = ${trimNum(w * 100)}%，否则无论投多少都达不到` };
+  if (!Number.isFinite(n) || n < 2 || n > 30) return { error: '总期数需在 2 ~ 30 之间' };
+  if (n <= fixed.length) return { error: `总期数需大于已投期数（当前已填 ${fixed.length} 期），否则没有需要计算的期` };
+  return { fixed, w, rPct, n };
+}
+
+function render() {
+  const v = readInputs();
+  const errEl = document.getElementById('error');
+  const statsEl = document.getElementById('stats');
+  const tbody = document.getElementById('tbody');
+  const chart = document.getElementById('chart');
+  if (v.error) {
+    errEl.textContent = v.error; errEl.hidden = false;
+    statsEl.innerHTML = ''; tbody.innerHTML = ''; chart.innerHTML = '';
+    return;
+  }
+  errEl.hidden = true;
+
+  const rows = computePlan(v.fixed, v.w, v.rPct, v.n);
+  const M = v.fixed.length;
+  const last = rows[rows.length - 1];
+  const g = (v.w + 1) / (v.w - v.rPct / 100);
+
+  statsEl.innerHTML = `
+    <div class="stat"><div class="k">已投入（前 ${M} 期）</div><div class="v">¥${fmt(v.fixed.reduce((a, b) => a + b, 0))}</div><div class="s">第 ${M + 1} 期起按规则计算</div></div>
+    <div class="stat"><div class="k">计算期累计增长</div><div class="v">每期 ×${g.toFixed(2)}</div><div class="s">待投 ${v.n - M} 期</div></div>
+    <div class="stat bad"><div class="k">${v.n} 期全部未中 · 总成本</div><div class="v">¥${fmt(last.cum)}</div><div class="s">最大亏损封顶</div></div>
+    <div class="stat good"><div class="k">第 ${v.n} 期中奖时盈利</div><div class="v">+¥${fmt(last.profit)}</div><div class="s">盈利率 ${pct(last.ratio)}（目标 ${trimNum(v.rPct)}%）</div></div>`;
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>第${r.period}期</td>
+      <td><span class="badge ${r.planned ? 'plan' : 'fixed'}">${r.planned ? '待投' : '已投'}</span></td>
+      <td>${fmt(r.stake)}</td>
+      <td>${fmt(r.cum)}</td>
+      <td>${fmt(r.ret)}</td>
+      <td class="profit">+${fmt(r.profit)}</td>
+      <td>${pct(r.ratio)}</td>
+    </tr>`).join('');
+
+  const logs = rows.map(r => Math.log10(r.stake));
+  const mn = Math.min(...logs), mx = Math.max(...logs);
+  chart.innerHTML = rows.map((r, i) => {
+    const h = mx > mn ? 16 + 54 * (logs[i] - mn) / (mx - mn) : 45;
+    return `<div class="bar-col"><div class="bar-lb">${fmt(r.stake)}</div><div class="bar${r.planned ? '' : ' fixed'}" style="height:${h}%"></div><div class="bar-p">第${r.period}期</div></div>`;
+  }).join('');
+}
+
+const presetBtns = document.querySelectorAll('.presets button');
+presetBtns.forEach((b, i) => b.addEventListener('click', () => {
+  const p = PRESETS[i];
+  FIXED_EL.value = p.fixed; W_EL.value = p.w; R_EL.value = p.r; N_EL.value = p.n;
+  presetBtns.forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  render();
+}));
+[FIXED_EL, W_EL, R_EL, N_EL].forEach(el => el.addEventListener('input', () => {
+  presetBtns.forEach(x => x.classList.remove('active'));
+  render();
+}));
+presetBtns[0].classList.add('active');
+render();
+</script>
+</body>
+</html>
